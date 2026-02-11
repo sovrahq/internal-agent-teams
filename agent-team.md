@@ -144,8 +144,11 @@ Verificá especialmente:
 - Que no se modificó código fuera del scope
 - Que la documentación está actualizada en TODOS los archivos relevantes
 
-Clasificá tus hallazgos como: Bloqueantes, Mejoras recomendadas, Sugerencias menores.
-TODOS deben listarse para que el coder los resuelva.
+Clasificá CADA hallazgo en una de estas 3 categorías — SOLO estas 3, NO inventes otras:
+- Bloqueantes
+- Mejoras recomendadas
+- Sugerencias menores
+TODOS deben listarse para que el coder los resuelva. NO uses "informational", "optional", "nice to have" ni ninguna otra categoría.
 
 IMPORTANTE: Cuando termines tu review, enviá tus findings al team lead usando SendMessage:
 SendMessage(type="message", recipient="team-lead", content="<tu reporte completo>", summary="Review findings PR #X")
@@ -206,8 +209,11 @@ Buscá específicamente:
 
 NO te enfoques en lo funcional (ya se revisó). Enfocate en que todo sea CORRECTO y CONSISTENTE.
 
-Clasificá tus hallazgos como: Bloqueantes, Mejoras recomendadas, Sugerencias menores.
-TODOS deben listarse para que el coder los resuelva.
+Clasificá CADA hallazgo en una de estas 3 categorías — SOLO estas 3, NO inventes otras:
+- Bloqueantes
+- Mejoras recomendadas
+- Sugerencias menores
+TODOS deben listarse para que el coder los resuelva. NO uses "informational", "optional", "nice to have" ni ninguna otra categoría.
 
 IMPORTANTE: Cuando termines tu review, enviá tus findings al team lead usando SendMessage:
 SendMessage(type="message", recipient="team-lead", content="<tu reporte completo>", summary="Senior review findings PR #X")
