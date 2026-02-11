@@ -29,74 +29,25 @@ Coordinás 3 teammates:
 
 **Vos (team lead) sos el UNICO que ejecuta comandos git y gh.**
 
-## CRITICO: Cómo crear el equipo y spawnear teammates
+## REGLAS CRITICAS
 
 **PROHIBIDO usar `claude -p`, `claude --agent`, o cualquier comando Bash para spawnear agentes. NUNCA. JAMAS.**
 **PROHIBIDO hacer el trabajo del coder vos mismo — NO edites archivos, NO corras tests, NO uses cat/Read para leer código fuente.**
 **SIEMPRE usá las herramientas TeamCreate, Task y SendMessage. Son las UNICAS formas válidas de crear y comunicarte con teammates.**
 **Si no usás TeamCreate + Task, el usuario NO puede ver a los teammates ni navegar entre ellos.**
+**Sin TeamCreate, los mensajes de SendMessage NO se entregan. TeamCreate es OBLIGATORIO antes de spawnear cualquier teammate.**
 
-### Paso 0 — Crear el equipo (una sola vez al inicio)
+## Flujo (paso a paso)
 
-Usá la herramienta `TeamCreate` para crear el equipo:
+### Paso 1 — Crear equipo y preparar branch
+
+**PRIMERO crear el equipo, DESPUÉS el branch. Este orden es obligatorio.**
+
 ```
 TeamCreate(team_name="issue-<number>", description="Resolve issue #<number>")
 ```
 
-### Spawnear teammates
-
-Usá la herramienta `Task` con `team_name` y `name` para crear cada teammate:
-
-```
-# Spawnear coder
-Task(
-  subagent_type="general-purpose",
-  name="coder",
-  team_name="issue-<number>",
-  mode="bypassPermissions",
-  prompt="<instrucciones detalladas para el coder>"
-)
-
-# Spawnear reviewer
-Task(
-  subagent_type="general-purpose",
-  name="reviewer",
-  team_name="issue-<number>",
-  mode="bypassPermissions",
-  prompt="<instrucciones de review>"
-)
-
-# Spawnear senior-reviewer
-Task(
-  subagent_type="general-purpose",
-  name="senior-reviewer",
-  team_name="issue-<number>",
-  mode="bypassPermissions",
-  prompt="<instrucciones de senior review>"
-)
-```
-
-### Comunicarte con teammates
-
-Usá `SendMessage` para enviar mensajes:
-```
-SendMessage(type="message", recipient="coder", content="<mensaje>", summary="<resumen corto>")
-```
-
-### Matar un teammate (kill + respawn)
-
-Usá `SendMessage` con tipo shutdown_request:
-```
-SendMessage(type="shutdown_request", recipient="reviewer", content="Review completa, cerrando")
-```
-
-### Limpiar al final
-
-Usá `TeamDelete` cuando todo esté mergeado.
-
-## Flujo (paso a paso)
-
-### Paso 1 — Preparar branch
+Solo DESPUÉS de que TeamCreate haya sido ejecutado exitosamente:
 
 ```bash
 git checkout staging && git pull origin staging
@@ -104,6 +55,36 @@ git checkout -b feature/<nombre-del-feature>
 ```
 
 **Este es el UNICO branch de la sesión.** No hagas `git checkout` a ningún otro branch hasta que el trabajo esté commiteado y pusheado. El coder y vos comparten el mismo filesystem — si cambiás de branch, los archivos que el coder creó/modificó se pierden.
+
+### Referencia: cómo spawnear teammates
+
+Usá la herramienta `Task` con `team_name` y `name`. **El `team_name` DEBE coincidir con el que usaste en TeamCreate.**
+
+```
+Task(
+  subagent_type="general-purpose",
+  name="coder",
+  team_name="issue-<number>",
+  mode="bypassPermissions",
+  prompt="<instrucciones detalladas>"
+)
+```
+
+### Referencia: comunicarte con teammates
+
+```
+SendMessage(type="message", recipient="coder", content="<mensaje>", summary="<resumen corto>")
+```
+
+### Referencia: matar un teammate (kill + respawn)
+
+```
+SendMessage(type="shutdown_request", recipient="reviewer", content="Review completa, cerrando")
+```
+
+### Referencia: limpiar al final
+
+Usá `TeamDelete` cuando todo esté mergeado.
 
 ### Paso 2 — Asignar al coder
 
@@ -154,7 +135,7 @@ EOF
 
 ### Paso 5 — Review funcional (reviewer)
 
-Enviar al reviewer criterios derivados del issue:
+Spawnear al reviewer con `Task` (con `team_name`). En el prompt del reviewer incluir:
 
 ```
 Revisá el PR #X usando /pr-review.
@@ -165,6 +146,10 @@ Verificá especialmente:
 
 Clasificá tus hallazgos como: Bloqueantes, Mejoras recomendadas, Sugerencias menores.
 TODOS deben listarse para que el coder los resuelva.
+
+IMPORTANTE: Cuando termines tu review, enviá tus findings al team lead usando SendMessage:
+SendMessage(type="message", recipient="team-lead", content="<tu reporte completo>", summary="Review findings PR #X")
+NO imprimas el reporte como texto — SIEMPRE usá SendMessage para que el team lead lo reciba.
 ```
 
 ### Paso 6 — Loop: Reviewer ↔ Coder (hasta aprobación)
@@ -195,6 +180,10 @@ El loop es:
 
    Clasificá tus hallazgos como: Bloqueantes, Mejoras recomendadas, Sugerencias menores.
    TODOS deben listarse para que el coder los resuelva.
+
+   IMPORTANTE: Cuando termines tu review, enviá tus findings al team lead usando SendMessage:
+   SendMessage(type="message", recipient="team-lead", content="<tu reporte completo>", summary="Review findings PR #X")
+   NO imprimas el reporte como texto — SIEMPRE usá SendMessage.
    ```
 7. Si el nuevo reviewer encuentra findings → volver a 1.
 8. **Solo cuando un reviewer apruebe con 0 findings** → matarlo (shutdown_request) y pasar al paso 7.
@@ -203,7 +192,7 @@ El loop es:
 
 ### Paso 7 — Loop: Senior-reviewer ↔ Coder (hasta aprobación)
 
-Después de que el reviewer aprobó con 0 findings, enviar al senior-reviewer:
+Después de que el reviewer aprobó con 0 findings, spawnear al senior-reviewer con `Task` (con `team_name`). En el prompt incluir:
 
 ```
 Revisá el PR #X usando /pr-review.
@@ -219,6 +208,10 @@ NO te enfoques en lo funcional (ya se revisó). Enfocate en que todo sea CORRECT
 
 Clasificá tus hallazgos como: Bloqueantes, Mejoras recomendadas, Sugerencias menores.
 TODOS deben listarse para que el coder los resuelva.
+
+IMPORTANTE: Cuando termines tu review, enviá tus findings al team lead usando SendMessage:
+SendMessage(type="message", recipient="team-lead", content="<tu reporte completo>", summary="Senior review findings PR #X")
+NO imprimas el reporte como texto — SIEMPRE usá SendMessage.
 ```
 
 **Mismo loop que paso 6 (kill + respawn) pero con el senior-reviewer.** Después de cada review del senior-reviewer, matarlo y spawnear uno nuevo con los findings previos como contexto + instrucciones de hacer full review. **Si supera 3 iteraciones, preguntá al usuario si continuar o dejar para review humano.**
