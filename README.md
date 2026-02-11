@@ -89,7 +89,7 @@ When multiple issues are provided, they are processed **sequentially**. Each iss
 The reviewer and senior-reviewer agents use `/pr-review`, a custom Claude Code skill defined in a separate repo:
 
 - **Repo**: [fernandezdiegoh/df-claude-skills](https://github.com/fernandezdiegoh/df-claude-skills)
-- **Skills used by agent-team**: `pr-review`, `codebase-audit`
+- **Skill used by agent-team**: `pr-review`
 
 Clone it alongside this repo for local access:
 
