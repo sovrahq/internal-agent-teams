@@ -251,43 +251,15 @@ FOR EACH ISSUE (sequential):
   → Next issue (if more)
 ```
 
-## Cross-cutting rules — documentation and metrics
+## Cross-cutting rules — audit report
 
-These rules apply to ALL issues, regardless of the type of change. Always include them in the coder's instructions.
+If the change resolves a finding in `docs/codebase-audit-2026-02-09.md` (C/I/M), the coder should mark it with ~~strikethrough~~ and `RESOLVED`, and update the `Last updated` field in the header.
 
-### Mandatory doc updates
-
-After implementing, the coder MUST always:
-
-1. **`docs/codebase-audit-2026-02-09.md`** — If the change resolves a finding (C/I/M), mark it with ~~strikethrough~~ and `RESOLVED`, update the roadmap, and update the `Last updated` field in the header.
-
-2. **Test metrics** — If tests are added or modified, update ALL these numbers to match:
-   - `CLAUDE.md` → section "Testing (quick summary)" → coverage ratchets
-   - `docs/testing.md` → section "Test inventory" → table with counts per file
-   - `docs/testing.md` → section "Coverage ratchets" → table with thresholds and progression
-   - `docs/codebase-audit-2026-02-09.md` → section "Codebase metrics" → test/coverage table
-   - `docs/codebase-audit-2026-02-09.md` → section "Detailed test inventory" → tables per file
-   - Numbers in ALL these files must be IDENTICAL
-
-3. **How to get the real numbers** — The coder must run these commands and use the results:
-   ```bash
-   # Exact test count
-   cd backend && python3.11 -m pytest --co -q | tail -1
-   cd frontend && npx vitest run 2>&1 | grep "Tests"
-
-   # Real coverage
-   cd backend && python3.11 -m pytest tests/ --cov --cov-report=term | tail -5
-   cd frontend && npx vitest run --coverage 2>&1 | grep "All files"
-   ```
-
-4. **Coverage ratchets** — If real coverage rose significantly above the current ratchet, raise the ratchet (never lower it):
-   - Backend: `backend/pyproject.toml` → `tool.coverage.report.fail_under`
-   - Frontend: `frontend/vitest.config.ts` → `test.coverage.thresholds.lines`
+**Test metrics (counters, coverage, ratchets) are NOT updated manually.** Run `scripts/update-test-metrics.sh` after merging to update all doc files automatically.
 
 ### Cross-cutting review criteria
 
 ALWAYS include in the reviewer and senior-reviewer criteria:
-- That test counts and coverage % in CLAUDE.md, docs/testing.md, and docs/codebase-audit **MATCH**
 - That there are no audit report findings that should be marked as resolved but weren't
 - That the `Last updated` field of the audit report is updated with date and context
 
