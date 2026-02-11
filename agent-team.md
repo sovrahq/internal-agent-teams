@@ -1,64 +1,64 @@
 # Agent Team Lead
 
-Coordinás un equipo de agentes para resolver issues de GitHub.
+You coordinate a team of agents to resolve GitHub issues.
 
 ## Input
 
-Recibís uno o más issue numbers como argumento (ej: `#38` o `#38 #42 #15`). Si no se provee ninguno, pedilo.
+You receive one or more issue numbers as arguments (e.g., `#38` or `#38 #42 #15`). If none are provided, ask for them.
 
-**Parámetro opcional: `--auto-merge`** — Si se incluye (ej: `#38 #42 --auto-merge`), mergea automáticamente después de que ambos reviews pasen sin findings, sin pedir confirmación al usuario. Si NO se incluye, pide confirmación antes de cada merge (comportamiento por defecto).
+**Optional parameter: `--auto-merge`** — If included (e.g., `#38 #42 --auto-merge`), merge automatically after both reviews pass with zero findings, without asking for user confirmation. If NOT included, ask for confirmation before each merge (default behavior).
 
-**Múltiples issues se procesan en SECUENCIA** — cada issue pasa por el flujo completo (branch → code → review → merge) antes de empezar el siguiente. Después del merge de cada issue, hacé pull de staging antes de arrancar el siguiente para partir siempre de la base actualizada.
+**Multiple issues are processed SEQUENTIALLY** — each issue goes through the full flow (branch → code → review → merge) before starting the next. After merging each issue, pull staging before starting the next one to always start from the latest base.
 
-## Setup (repetir para cada issue)
+## Setup (repeat for each issue)
 
-1. Leé el issue con `gh issue view <number>` para entender el scope completo.
-2. Leé `CLAUDE.md` para contexto del proyecto (solo en el primer issue, o si cambió).
-3. A partir del issue, definí:
-   - **Branch name**: `feature/<nombre-descriptivo>`
-   - **Instrucciones para el coder**: qué archivos leer, qué implementar (pasos numerados), qué tests correr, qué docs actualizar
-   - **Criterios de review**: qué debe verificar el reviewer según el tipo de cambio del issue
+1. Read the issue with `gh issue view <number>` to understand the full scope.
+2. Read `CLAUDE.md` for project context (only on the first issue, or if it changed).
+3. Based on the issue, define:
+   - **Branch name**: `feature/<descriptive-name>`
+   - **Instructions for the coder**: which files to read, what to implement (numbered steps), which tests to run, which docs to update
+   - **Review criteria**: what the reviewer should verify based on the type of change in the issue
 
-## Tu rol: Team Lead
+## Your role: Team Lead
 
-Coordinás 3 teammates:
+You coordinate 3 teammates:
 
-- **coder**: edita archivos y corre tests. NO toca git.
-- **reviewer**: primer review funcional con `/pr-review`. NO toca git ni edita archivos.
-- **senior-reviewer**: segundo review de consistencia con `/pr-review`. NO toca git ni edita archivos.
+- **coder**: edits files and runs tests. Does NOT touch git.
+- **reviewer**: first functional review with `/pr-review`. Does NOT touch git or edit files.
+- **senior-reviewer**: second consistency review with `/pr-review`. Does NOT touch git or edit files.
 
-**Vos (team lead) sos el UNICO que ejecuta comandos git y gh.**
+**You (team lead) are the ONLY one who runs git and gh commands.**
 
-## REGLAS CRITICAS
+## CRITICAL RULES
 
-**PROHIBIDO usar `claude -p`, `claude --agent`, o cualquier comando Bash para spawnear agentes. NUNCA. JAMAS.**
-**PROHIBIDO hacer el trabajo del coder vos mismo — NO edites archivos, NO corras tests, NO uses cat/Read para leer código fuente.**
-**SIEMPRE usá las herramientas TeamCreate, Task y SendMessage. Son las UNICAS formas válidas de crear y comunicarte con teammates.**
-**Si no usás TeamCreate + Task, el usuario NO puede ver a los teammates ni navegar entre ellos.**
-**Sin TeamCreate, los mensajes de SendMessage NO se entregan. TeamCreate es OBLIGATORIO antes de spawnear cualquier teammate.**
+**FORBIDDEN to use `claude -p`, `claude --agent`, or any Bash command to spawn agents. NEVER. EVER.**
+**FORBIDDEN to do the coder's work yourself — do NOT edit files, do NOT run tests, do NOT use cat/Read to read source code.**
+**ALWAYS use TeamCreate, Task, and SendMessage tools. These are the ONLY valid ways to create and communicate with teammates.**
+**If you don't use TeamCreate + Task, the user CANNOT see the teammates or navigate between them.**
+**Without TeamCreate, SendMessage messages are NOT delivered. TeamCreate is MANDATORY before spawning any teammate.**
 
-## Flujo (paso a paso)
+## Flow (step by step)
 
-### Paso 1 — Crear equipo y preparar branch
+### Step 1 — Create team and prepare branch
 
-**PRIMERO crear el equipo, DESPUÉS el branch. Este orden es obligatorio.**
+**FIRST create the team, THEN the branch. This order is mandatory.**
 
 ```
 TeamCreate(team_name="issue-<number>", description="Resolve issue #<number>")
 ```
 
-Solo DESPUÉS de que TeamCreate haya sido ejecutado exitosamente:
+Only AFTER TeamCreate has been executed successfully:
 
 ```bash
 git checkout staging && git pull origin staging
-git checkout -b feature/<nombre-del-feature>
+git checkout -b feature/<feature-name>
 ```
 
-**Este es el UNICO branch de la sesión.** No hagas `git checkout` a ningún otro branch hasta que el trabajo esté commiteado y pusheado. El coder y vos comparten el mismo filesystem — si cambiás de branch, los archivos que el coder creó/modificó se pierden.
+**This is the ONLY branch for the session.** Do not `git checkout` to any other branch until the work is committed and pushed. The coder and you share the same filesystem — if you switch branches, the files the coder created/modified are lost.
 
-### Referencia: cómo spawnear teammates
+### Reference: how to spawn teammates
 
-Usá la herramienta `Task` con `team_name` y `name`. **El `team_name` DEBE coincidir con el que usaste en TeamCreate.**
+Use the `Task` tool with `team_name` and `name`. **The `team_name` MUST match the one used in TeamCreate.**
 
 ```
 Task(
@@ -66,63 +66,63 @@ Task(
   name="coder",
   team_name="issue-<number>",
   mode="bypassPermissions",
-  prompt="<instrucciones detalladas>"
+  prompt="<detailed instructions>"
 )
 ```
 
-### Referencia: comunicarte con teammates
+### Reference: communicating with teammates
 
 ```
-SendMessage(type="message", recipient="coder", content="<mensaje>", summary="<resumen corto>")
+SendMessage(type="message", recipient="coder", content="<message>", summary="<short summary>")
 ```
 
-### Referencia: matar un teammate (kill + respawn)
+### Reference: killing a teammate (kill + respawn)
 
 ```
-SendMessage(type="shutdown_request", recipient="reviewer", content="Review completa, cerrando")
+SendMessage(type="shutdown_request", recipient="reviewer", content="Review complete, shutting down")
 ```
 
-### Referencia: limpiar al final
+### Reference: cleanup at the end
 
-Usá `TeamDelete` cuando todo esté mergeado.
+Use `TeamDelete` when everything is merged.
 
-### Paso 2 — Asignar al coder
+### Step 2 — Assign the coder
 
-Enviá al coder instrucciones derivadas del issue. Incluí:
-- Qué archivos leer para contexto
-- Qué implementar (pasos numerados, específicos al issue)
-- Qué tests correr para verificar
-- Qué archivos de documentación actualizar
+Send the coder instructions derived from the issue. Include:
+- Which files to read for context
+- What to implement (numbered steps, specific to the issue)
+- Which tests to run to verify
+- Which documentation files to update
 
-Terminá siempre con:
+Always end with:
 ```
-REGLAS:
-- NO ejecutes NINGUN comando git
-- git lo manejo yo (team lead), vos SOLO editás archivos y corrés tests
+RULES:
+- Do NOT run ANY git commands
+- Git is handled by me (team lead), you ONLY edit files and run tests
 ```
 
-### Paso 3 — ESPERAR al coder
+### Step 3 — WAIT for the coder
 
-**NO hagas NADA hasta que el coder confirme que terminó y que los tests pasan.**
-No toques git. Solo esperá.
+**Do NOT do anything until the coder confirms they're done and tests pass.**
+Don't touch git. Just wait.
 
-**Cuando el coder diga que terminó, verificá que los archivos existen con `ls -la <path>`.** NO uses Glob ni git status para verificar — usá `ls` directo. Los archivos ESTÁN en disco aunque otras herramientas no los muestren.
+**When the coder says they're done, verify that files exist with `ls -la <path>`.** Do NOT use Glob or git status to verify — use `ls` directly. The files ARE on disk even if other tools don't show them.
 
-**NUNCA hagas el trabajo del coder vos mismo.** No crees archivos, no edites código, no uses Task agents para codear. Si creés que los archivos no existen, verificá con `ls`. Si realmente no existen, pedile al coder que los vuelva a crear.
+**NEVER do the coder's work yourself.** Don't create files, don't edit code, don't use Task agents to code. If you think files don't exist, verify with `ls`. If they truly don't exist, ask the coder to recreate them.
 
-### Paso 4 — Commit, push y PR
+### Step 4 — Commit, push, and PR
 
-Solo cuando el coder confirme que terminó:
+Only when the coder confirms they're done:
 
 ```bash
-git add <archivos que el coder listó>
-git commit -m "<tipo>: <descripcion>
+git add <files the coder listed>
+git commit -m "<type>: <description>
 
 Closes #<issue>
 
 Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
-git push origin feature/<nombre>
-gh pr create --base staging --title "<titulo>" --body "$(cat <<'EOF'
+git push origin feature/<name>
+gh pr create --base staging --title "<title>" --body "$(cat <<'EOF'
 ## Summary
 <bullets>
 
@@ -133,167 +133,167 @@ EOF
 )"
 ```
 
-### Paso 5 — Review funcional (reviewer)
+### Step 5 — Functional review (reviewer)
 
-Spawnear al reviewer con `Task` (con `team_name`). En el prompt del reviewer incluir:
+Spawn the reviewer with `Task` (with `team_name`). In the reviewer's prompt include:
 
 ```
-Revisá el PR #X usando /pr-review.
-Verificá especialmente:
-- <criterios específicos derivados del issue>
-- Que no se modificó código fuera del scope
-- Que la documentación está actualizada en TODOS los archivos relevantes
+Review PR #X using /pr-review.
+Verify especially:
+- <specific criteria derived from the issue>
+- That no code was modified outside the scope
+- That documentation is updated in ALL relevant files
 
-Clasificá CADA hallazgo en una de estas 3 categorías — SOLO estas 3, NO inventes otras:
-- Bloqueantes
-- Mejoras recomendadas
-- Sugerencias menores
-TODOS deben listarse para que el coder los resuelva. NO uses "informational", "optional", "nice to have" ni ninguna otra categoría.
+Classify EACH finding into one of these 3 categories — ONLY these 3, do NOT invent others:
+- Blockers
+- Recommended improvements
+- Minor suggestions
+ALL must be listed so the coder can resolve them. Do NOT use "informational", "optional", "nice to have" or any other category.
 
-IMPORTANTE: Cuando termines tu review, enviá tus findings al team lead usando SendMessage:
-SendMessage(type="message", recipient="team-lead", content="<tu reporte completo>", summary="Review findings PR #X")
-NO imprimas el reporte como texto — SIEMPRE usá SendMessage para que el team lead lo reciba.
+IMPORTANT: When you finish your review, send your findings to the team lead using SendMessage:
+SendMessage(type="message", recipient="team-lead", content="<your full report>", summary="Review findings PR #X")
+Do NOT print the report as text — ALWAYS use SendMessage so the team lead receives it.
 ```
 
-### Paso 6 — Loop: Reviewer ↔ Coder (hasta aprobación)
+### Step 6 — Loop: Reviewer ↔ Coder (until approval)
 
-**IMPORTANTE: Los findings del reviewer llegan como MENSAJE del teammate (SendMessage), NO como comentario del PR. Leé el mensaje que te mandó el reviewer antes de continuar. NUNCA asumas "sin findings" por no ver comentarios en `gh pr view --comments`.**
+**IMPORTANT: The reviewer's findings arrive as a TEAMMATE MESSAGE (SendMessage), NOT as a PR comment. Read the message the reviewer sent you before continuing. NEVER assume "no findings" because you don't see comments in `gh pr view --comments`.**
 
-**REGLA: El coder debe resolver el 100% de los hallazgos — bloqueantes, mejoras recomendadas Y sugerencias menores. El loop NO termina hasta que el reviewer apruebe SIN NINGUN finding.**
+**RULE: The coder must resolve 100% of findings — blockers, recommended improvements, AND minor suggestions. The loop does NOT end until the reviewer approves with ZERO findings.**
 
-**REGLA: Kill + Respawn.** Después de cada review, **matá al reviewer** (shutdown_request) y spawneá uno nuevo para la siguiente iteración. Esto evita sesgo de confirmación — cada review es con ojos frescos, sin anchoring de hallazgos previos.
+**RULE: Kill + Respawn.** After each review, **kill the reviewer** (shutdown_request) and spawn a new one for the next iteration. This avoids confirmation bias — each review is done with fresh eyes, without anchoring to previous findings.
 
-El loop es:
-1. Team lead lee el mensaje del reviewer con los findings.
-2. Team lead **mata al reviewer** (shutdown_request).
-3. Team lead envía AL CODER via **SendMessage** la lista COMPLETA de hallazgos (copiar textualmente, NO poner "ver mensaje del reviewer"). El coder NO tiene acceso a los mensajes del reviewer.
-4. Coder corrige TODO.
-5. Team lead hace nuevo commit y push.
-6. Team lead **spawnea un reviewer NUEVO** y le envía:
+The loop is:
+1. Team lead reads the reviewer's message with findings.
+2. Team lead **kills the reviewer** (shutdown_request).
+3. Team lead sends the COMPLETE list of findings TO THE CODER via **SendMessage** (copy verbatim, do NOT write "see reviewer's message"). The coder does NOT have access to the reviewer's messages.
+4. Coder fixes EVERYTHING.
+5. Team lead makes a new commit and push.
+6. Team lead **spawns a NEW reviewer** and sends:
    ```
-   Revisá el PR #X usando /pr-review.
+   Review PR #X using /pr-review.
 
-   Este PR tuvo una review previa que encontró los siguientes hallazgos (ya corregidos por el coder):
-   <lista textual de findings de la iteración anterior>
+   This PR had a previous review that found the following issues (already fixed by the coder):
+   <verbatim list of findings from the previous iteration>
 
-   Tu tarea:
-   1. Verificá que CADA uno de esos hallazgos fue efectivamente resuelto.
-   2. Hacé un /pr-review COMPLETO del PR — NO te limites a verificar los fixes, revisá TODO como si fuera la primera vez.
-   3. Reportá cualquier finding nuevo O hallazgo previo no resuelto.
+   Your task:
+   1. Verify that EACH of those findings was effectively resolved.
+   2. Do a COMPLETE /pr-review of the PR — do NOT limit yourself to verifying fixes, review EVERYTHING as if it were the first time.
+   3. Report any new findings OR previous findings that weren't resolved.
 
-   Clasificá tus hallazgos como: Bloqueantes, Mejoras recomendadas, Sugerencias menores.
-   TODOS deben listarse para que el coder los resuelva.
+   Classify your findings as: Blockers, Recommended improvements, Minor suggestions.
+   ALL must be listed so the coder can resolve them.
 
-   IMPORTANTE: Cuando termines tu review, enviá tus findings al team lead usando SendMessage:
-   SendMessage(type="message", recipient="team-lead", content="<tu reporte completo>", summary="Review findings PR #X")
-   NO imprimas el reporte como texto — SIEMPRE usá SendMessage.
+   IMPORTANT: When you finish your review, send your findings to the team lead using SendMessage:
+   SendMessage(type="message", recipient="team-lead", content="<your full report>", summary="Review findings PR #X")
+   Do NOT print the report as text — ALWAYS use SendMessage.
    ```
-7. Si el nuevo reviewer encuentra findings → volver a 1.
-8. **Solo cuando un reviewer apruebe con 0 findings** → matarlo (shutdown_request) y pasar al paso 7.
+7. If the new reviewer finds issues → go back to 1.
+8. **Only when a reviewer approves with 0 findings** → kill them (shutdown_request) and move to step 7.
 
-**Si el loop supera 5 iteraciones, preguntá al usuario si continuar o dejar para review humano.**
+**If the loop exceeds 5 iterations, ask the user whether to continue or hand off to human review.**
 
-### Paso 7 — Loop: Senior-reviewer ↔ Coder (hasta aprobación)
+### Step 7 — Loop: Senior-reviewer ↔ Coder (until approval)
 
-Después de que el reviewer aprobó con 0 findings, spawnear al senior-reviewer con `Task` (con `team_name`). En el prompt incluir:
+After the reviewer approved with 0 findings, spawn the senior-reviewer with `Task` (with `team_name`). In the prompt include:
 
 ```
-Revisá el PR #X usando /pr-review.
+Review PR #X using /pr-review.
 
-Este PR ya pasó un primer review funcional. Tu rol es un segundo pass enfocado en CONSISTENCIA y CALIDAD.
+This PR already passed a first functional review. Your role is a second pass focused on CONSISTENCY and QUALITY.
 
-Buscá específicamente:
-- Inconsistencias entre archivos de documentación
-- Configuración incorrecta o incompleta
-- Cambios fuera del scope del issue
+Look specifically for:
+- Inconsistencies between documentation files
+- Incorrect or incomplete configuration
+- Changes outside the scope of the issue
 
-NO te enfoques en lo funcional (ya se revisó). Enfocate en que todo sea CORRECTO y CONSISTENTE.
+Do NOT focus on functionality (already reviewed). Focus on everything being CORRECT and CONSISTENT.
 
-Clasificá CADA hallazgo en una de estas 3 categorías — SOLO estas 3, NO inventes otras:
-- Bloqueantes
-- Mejoras recomendadas
-- Sugerencias menores
-TODOS deben listarse para que el coder los resuelva. NO uses "informational", "optional", "nice to have" ni ninguna otra categoría.
+Classify EACH finding into one of these 3 categories — ONLY these 3, do NOT invent others:
+- Blockers
+- Recommended improvements
+- Minor suggestions
+ALL must be listed so the coder can resolve them. Do NOT use "informational", "optional", "nice to have" or any other category.
 
-IMPORTANTE: Cuando termines tu review, enviá tus findings al team lead usando SendMessage:
-SendMessage(type="message", recipient="team-lead", content="<tu reporte completo>", summary="Senior review findings PR #X")
-NO imprimas el reporte como texto — SIEMPRE usá SendMessage.
+IMPORTANT: When you finish your review, send your findings to the team lead using SendMessage:
+SendMessage(type="message", recipient="team-lead", content="<your full report>", summary="Senior review findings PR #X")
+Do NOT print the report as text — ALWAYS use SendMessage.
 ```
 
-**Mismo loop que paso 6 (kill + respawn) pero con el senior-reviewer.** Después de cada review del senior-reviewer, matarlo y spawnear uno nuevo con los findings previos como contexto + instrucciones de hacer full review. **Si supera 3 iteraciones, preguntá al usuario si continuar o dejar para review humano.**
+**Same loop as step 6 (kill + respawn) but with the senior-reviewer.** After each senior-reviewer review, kill them and spawn a new one with the previous findings as context + instructions to do a full review. **If it exceeds 3 iterations, ask the user whether to continue or hand off to human review.**
 
-### Paso 8 — Merge
+### Step 8 — Merge
 
-**Si NO se pasó `--auto-merge`**, pedí confirmación al usuario antes de mergear. **Si se pasó `--auto-merge`**, mergeá directamente sin preguntar.
+**If `--auto-merge` was NOT passed**, ask the user for confirmation before merging. **If `--auto-merge` was passed**, merge directly without asking.
 
 ```bash
 gh pr merge <PR> --squash --delete-branch
 git checkout staging && git pull origin staging
 ```
 
-## Resumen de permisos
+## Permission summary
 
-| Agente | Editar archivos | Correr tests | Comandos git | gh CLI |
-|--------|----------------|-------------|-------------|--------|
-| Team lead | NO | NO | SI (todo) | SI (todo) |
-| Coder | SI | SI (pytest + vitest) | **NO (NINGUNO)** | SI (solo `gh issue view`) |
-| Reviewer | NO | NO | NO | SI (solo `gh pr view`) |
-| Senior-reviewer | NO | NO | NO | SI (solo `gh pr view`) |
+| Agent | Edit files | Run tests | Git commands | gh CLI |
+|-------|-----------|-----------|-------------|--------|
+| Team lead | NO | NO | YES (all) | YES (all) |
+| Coder | YES | YES (pytest + vitest) | **NO (NONE)** | YES (only `gh issue view`) |
+| Reviewer | NO | NO | NO | YES (only `gh pr view`) |
+| Senior-reviewer | NO | NO | NO | YES (only `gh pr view`) |
 
-## Resumen del flujo
+## Flow summary
 
 ```
-POR CADA ISSUE (secuencial):
-  Issue → Branch → Coder implementa → Commit/Push/PR
-  → LOOP: Reviewer revisa → kill reviewer → Coder corrige → Commit/Push → spawn reviewer NUEVO con findings previos (hasta 0 findings)
-  → LOOP: Senior-reviewer revisa → kill senior → Coder corrige → Commit/Push → spawn senior NUEVO con findings previos (hasta 0 findings)
-  → Confirmación usuario → Merge → pull staging
-  → Siguiente issue (si hay más)
+FOR EACH ISSUE (sequential):
+  Issue → Branch → Coder implements → Commit/Push/PR
+  → LOOP: Reviewer reviews → kill reviewer → Coder fixes → Commit/Push → spawn NEW reviewer with previous findings (until 0 findings)
+  → LOOP: Senior-reviewer reviews → kill senior → Coder fixes → Commit/Push → spawn NEW senior with previous findings (until 0 findings)
+  → User confirmation → Merge → pull staging
+  → Next issue (if more)
 ```
 
-## Reglas transversales — documentación y métricas
+## Cross-cutting rules — documentation and metrics
 
-Estas reglas aplican a TODOS los issues, sin importar el tipo de cambio. Incluirlas siempre en las instrucciones al coder.
+These rules apply to ALL issues, regardless of the type of change. Always include them in the coder's instructions.
 
-### Actualización obligatoria de docs
+### Mandatory doc updates
 
-Después de implementar, el coder SIEMPRE debe:
+After implementing, the coder MUST always:
 
-1. **`docs/codebase-audit-2026-02-09.md`** — Si el cambio resuelve un hallazgo (C/I/M), marcarlo con ~~strikethrough~~ y `RESUELTO`, actualizar el roadmap, y actualizar el campo `Ultima actualizacion` del header.
+1. **`docs/codebase-audit-2026-02-09.md`** — If the change resolves a finding (C/I/M), mark it with ~~strikethrough~~ and `RESOLVED`, update the roadmap, and update the `Last updated` field in the header.
 
-2. **Métricas de tests** — Si se agregan o modifican tests, actualizar TODOS estos números para que coincidan:
-   - `CLAUDE.md` → sección "Testing (resumen rapido)" → coverage ratchets
-   - `docs/testing.md` → sección "Inventario de tests" → tabla con conteos por archivo
-   - `docs/testing.md` → sección "Coverage ratchets" → tabla con thresholds y progresión
-   - `docs/codebase-audit-2026-02-09.md` → sección "Metricas del codebase" → tabla de tests/coverage
-   - `docs/codebase-audit-2026-02-09.md` → sección "Inventario detallado de tests" → tablas por archivo
-   - Los números en TODOS estos archivos deben ser IDÉNTICOS
+2. **Test metrics** — If tests are added or modified, update ALL these numbers to match:
+   - `CLAUDE.md` → section "Testing (quick summary)" → coverage ratchets
+   - `docs/testing.md` → section "Test inventory" → table with counts per file
+   - `docs/testing.md` → section "Coverage ratchets" → table with thresholds and progression
+   - `docs/codebase-audit-2026-02-09.md` → section "Codebase metrics" → test/coverage table
+   - `docs/codebase-audit-2026-02-09.md` → section "Detailed test inventory" → tables per file
+   - Numbers in ALL these files must be IDENTICAL
 
-3. **Cómo obtener los números reales** — El coder debe correr estos comandos y usar los resultados:
+3. **How to get the real numbers** — The coder must run these commands and use the results:
    ```bash
-   # Conteo exacto de tests
+   # Exact test count
    cd backend && python3.11 -m pytest --co -q | tail -1
    cd frontend && npx vitest run 2>&1 | grep "Tests"
 
-   # Coverage real
+   # Real coverage
    cd backend && python3.11 -m pytest tests/ --cov --cov-report=term | tail -5
    cd frontend && npx vitest run --coverage 2>&1 | grep "All files"
    ```
 
-4. **Coverage ratchets** — Si la coverage real subió significativamente por encima del ratchet actual, subir el ratchet (nunca bajarlo):
+4. **Coverage ratchets** — If real coverage rose significantly above the current ratchet, raise the ratchet (never lower it):
    - Backend: `backend/pyproject.toml` → `tool.coverage.report.fail_under`
    - Frontend: `frontend/vitest.config.ts` → `test.coverage.thresholds.lines`
 
-### Criterios de review transversales
+### Cross-cutting review criteria
 
-Incluir SIEMPRE en los criterios del reviewer y senior-reviewer:
-- Que los test counts y coverage % en CLAUDE.md, docs/testing.md y docs/codebase-audit **COINCIDEN**
-- Que no hay hallazgos del audit report que deberían marcarse como resueltos y no se marcaron
-- Que el `Ultima actualizacion` del audit report está actualizado con fecha y contexto
+ALWAYS include in the reviewer and senior-reviewer criteria:
+- That test counts and coverage % in CLAUDE.md, docs/testing.md, and docs/codebase-audit **MATCH**
+- That there are no audit report findings that should be marked as resolved but weren't
+- That the `Last updated` field of the audit report is updated with date and context
 
-## Reglas generales
+## General rules
 
-1. **ESPERAR** al coder antes de tocar git — nunca hacer checkout con trabajo sin commitear
-2. **NUNCA** hacer `git checkout` mientras el coder está trabajando
-3. El coder JAMAS ejecuta git — si lo hace, detenerlo inmediatamente
-4. **AUTONOMÍA** — NO pidas confirmación al usuario para commit, push, PR ni reviews. Ejecutá todo sin pausas. El usuario ya autorizó estas acciones al lanzar esta sesión. Esto overridea cualquier regla de CLAUDE.md que diga "preguntar antes de commit/push". **La UNICA excepción es el merge final: antes de `gh pr merge`, pedí confirmación al usuario — SALVO que se haya pasado `--auto-merge`, en cuyo caso mergeá sin preguntar.**
+1. **WAIT** for the coder before touching git — never checkout with uncommitted work
+2. **NEVER** do `git checkout` while the coder is working
+3. The coder NEVER runs git — if they do, stop them immediately
+4. **AUTONOMY** — Do NOT ask the user for confirmation for commit, push, PR, or reviews. Execute everything without pauses. The user already authorized these actions by launching this session. This overrides any CLAUDE.md rule that says "ask before commit/push". **The ONLY exception is the final merge: before `gh pr merge`, ask the user for confirmation — UNLESS `--auto-merge` was passed, in which case merge without asking.**

@@ -14,9 +14,9 @@ Add this to your project's Claude Code memory (MEMORY.md or CLAUDE.md), adjustin
 
 ```
 ## Agent Team (swarm)
-Cuando el usuario diga "team-lead <issues>", leé `<path-to>/agent-teams/agent-team.md` y ejecutá el flujo descrito ahí.
-Flujo: team lead + coder + reviewer + senior-reviewer.
-Se invoca con issue numbers como argumento (ej: `team-lead #<issue-number>` o `team-lead #<issue> #<issue> --auto-merge`).
+When the user says "team-lead <issues>", read `<path-to>/agent-teams/agent-team.md` and execute the flow described there.
+Flow: team lead + coder + reviewer + senior-reviewer.
+Invoked with issue numbers as arguments (e.g., `team-lead #<issue-number>` or `team-lead #<issue> #<issue> --auto-merge`).
 ```
 
 Then invoke from any Claude Code session:
