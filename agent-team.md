@@ -291,6 +291,14 @@ gh pr merge <PR> --squash --delete-branch
 git checkout staging && git pull origin staging
 ```
 
+**After merge, clean up the team immediately:**
+
+```
+TeamDelete
+```
+
+This removes team and task files from disk. Without this, stale tasks get re-delivered if the same team name is reused in a future session.
+
 ## Permission summary
 
 | Agent | Edit files | Run tests | Git commands | gh CLI |
@@ -309,7 +317,7 @@ FOR EACH ISSUE (sequential):
   → LOOP: Reviewer reviews (functional, max 5 iter)
   → LOOP: Senior-reviewer reviews (consistency, max 3 iter)
   → LOOP: Final-reviewer reviews (cold/generic, no scope restrictions, max 3 iter)
-  → User confirmation → Merge → pull staging
+  → User confirmation → Merge → pull staging → TeamDelete
   → Next issue (if more)
 ```
 
