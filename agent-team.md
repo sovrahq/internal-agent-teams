@@ -138,7 +138,7 @@ EOF
 Spawn the reviewer with `Task` (with `team_name`). In the reviewer's prompt include:
 
 ```
-Review PR #X using /pr-review.
+Review PR #X using /pr-review --team.
 Verify especially:
 - <specific criteria derived from the issue>
 - That no code was modified outside the scope
@@ -171,7 +171,7 @@ The loop is:
 5. Team lead makes a new commit and push.
 6. Team lead **spawns a NEW reviewer** and sends:
    ```
-   Review PR #X using /pr-review.
+   Review PR #X using /pr-review --team.
 
    This PR had a previous review that found the following issues (already fixed by the coder):
    <verbatim list of findings from the previous iteration>
@@ -198,7 +198,7 @@ The loop is:
 After the reviewer approved with 0 findings, spawn the senior-reviewer with `Task` (with `team_name`). In the prompt include:
 
 ```
-Review PR #X using /pr-review.
+Review PR #X using /pr-review --team.
 
 This PR already passed a first functional review. Your role is a second pass focused on CONSISTENCY and QUALITY.
 
@@ -227,7 +227,7 @@ Do NOT print the report as text — ALWAYS use SendMessage.
 After the senior-reviewer approved with 0 findings, spawn a **final-reviewer** with `Task` (with `team_name`). This is a completely fresh review with NO scope restrictions — it catches edge cases, race conditions, and improvements that scoped reviewers miss.
 
 ```
-Review PR #X using /pr-review.
+Review PR #X using /pr-review --team.
 
 This PR already passed a functional review and a consistency review, both with 0 findings.
 

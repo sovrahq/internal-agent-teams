@@ -36,9 +36,9 @@ The main Claude Code session reads `agent-team.md` and acts as **team lead**, us
 |-------|------|-----------|-----------|--------|
 | **Team lead** | Coordination, git, PRs | NO | NO | YES (all) |
 | **Coder** | Implementation | YES | YES | NO (only `gh issue view`) |
-| **Reviewer** | Functional review (`/pr-review`) | NO | NO | NO (only `gh pr view`) |
-| **Senior reviewer** | Consistency review (`/pr-review`) | NO | NO | NO (only `gh pr view`) |
-| **Final reviewer** | Cold generic review (`/pr-review`) | NO | NO | NO (only `gh pr view`) |
+| **Reviewer** | Functional review (`/pr-review --team`) | NO | NO | NO (only `gh pr view`) |
+| **Senior reviewer** | Consistency review (`/pr-review --team`) | NO | NO | NO (only `gh pr view`) |
+| **Final reviewer** | Cold generic review (`/pr-review --team`) | NO | NO | NO (only `gh pr view`) |
 
 ### Flow
 
@@ -59,7 +59,7 @@ PER ISSUE (sequential):
 
 The review process uses a **kill + respawn** pattern to avoid confirmation bias:
 
-1. Reviewer examines the PR using `/pr-review` and reports findings
+1. Reviewer examines the PR using `/pr-review --team` and reports findings via SendMessage
 2. Team lead **kills the reviewer** (shutdown) and forwards findings to the coder
 3. Coder fixes **all** findings (blockers, improvements, AND minor suggestions)
 4. Team lead commits, pushes, and **spawns a fresh reviewer** with:
@@ -139,7 +139,9 @@ Add this section to your project's `CLAUDE.md`:
 The reviewer and senior-reviewer agents use `/pr-review`, a custom Claude Code skill defined in a separate repo:
 
 - **Repo**: [fernandezdiegoh/df-claude-skills](https://github.com/fernandezdiegoh/df-claude-skills)
-- **Skill used by agent-team**: `pr-review`
+- **Skill used by agent-team**: `pr-review` (v2.1.0+, invoked with `--team` flag)
+
+The `--team` flag ensures reviewers deliver findings via SendMessage (not GitHub comments) and never execute `gh` write commands. See the [pr-review README](https://github.com/fernandezdiegoh/df-claude-skills/tree/main/skills/pr-review) for details.
 
 Clone it alongside this repo for local access:
 
