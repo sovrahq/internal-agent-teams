@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## 2026-02-13
+
+- Fixed concurrent team branch safety: exact branch name check replaces `feature/*` glob (prevents Team A committing on Team B's branch)
+- Added mandatory branch verification before every git operation (add, commit, push), including in review loop
+- Added CONCURRENT TEAMS WARNING in Step 1 with branch name storage
+
 ## 2026-02-12
 
 - Added `--team` flag to all `/pr-review` invocations (requires pr-review v2.1.0+)
