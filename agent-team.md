@@ -22,7 +22,7 @@ You receive one or more issue numbers as arguments (e.g., `#38` or `#38 #42 #15`
 1. Read the issue with `gh issue view <number>` to understand the full scope.
 2. Read `CLAUDE.md` for project context (only on the first issue, or if it changed).
 3. Based on the issue, define:
-   - **Branch name**: `feature/<issue-number>-<descriptive-name>` (e.g., `feature/38-add-auth`)
+   - **Branch name**: `feature/<issue-number>-<descriptive-name>-<short-hash>` (e.g., `feature/38-add-auth-a4f2c1`). Generate the hash with `openssl rand -hex 3`.
    - **Instructions for the coder**: which files to read, what to implement (numbered steps), which tests to run, which docs to update
    - **Review criteria**: what the reviewer should verify based on the type of change in the issue
 
@@ -63,9 +63,10 @@ Before starting, verify the environment is ready:
 gh auth status
 git remote -v
 git rev-parse --verify <base-branch>
+git status --short
 ```
 
-If any check fails, stop and report the error to the user. Do NOT create the team or branch until all checks pass.
+If any check fails, stop and report the error to the user. **If `git status --short` shows uncommitted changes, stop and ask the user to stash or commit them first.** Do NOT create the team or branch until all checks pass and the working tree is clean.
 
 ### Step 1 — Create team and prepare branch
 
@@ -79,7 +80,7 @@ Only AFTER TeamCreate has been executed successfully:
 
 ```bash
 BASE_BRANCH="staging"   # ← or the value of --base if provided
-BRANCH="feature/<issue-number>-<descriptive-name>"
+BRANCH="feature/<issue-number>-<descriptive-name>-$(openssl rand -hex 3)"
 
 git checkout "$BASE_BRANCH" && git pull origin "$BASE_BRANCH"
 git checkout -b "$BRANCH"

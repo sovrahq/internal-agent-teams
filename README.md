@@ -65,7 +65,7 @@ The team lead runs pre-flight checks, creates the team, and spawns the coder:
 
 TeamCreate(team_name="issue-38", description="Resolve issue #38")
 
-Branch: feature/38-add-user-preferences
+Branch: feature/38-add-user-preferences-a4f2c1
 Coder spawned with 5 implementation steps. Waiting for the coder to finish implementation...
 ```
 
@@ -136,7 +136,7 @@ Starting issue #42...
 ✓ Pre-flight: staging up to date
 
 TeamCreate(team_name="issue-42", description="Resolve issue #42")
-Branch: feature/42-fix-webhook-auth
+Branch: feature/42-fix-webhook-auth-e7b3d9
 ...
 ```
 
@@ -268,7 +268,7 @@ Add this section to your project's `CLAUDE.md`:
 | Pre-flight checks | Verifies gh auth, git remote, and base branch existence before starting |
 | Error recovery | Crashed agents re-spawned automatically (max 2 retries) |
 | Parametrized branches | `$BASE_BRANCH` and `$BRANCH` variables used in all git commands |
-| Branch naming | `feature/<issue-number>-<descriptive-name>` for traceability |
+| Branch naming | `feature/<issue-number>-<name>-<short-hash>` — readable + unique to avoid collisions |
 | Review summary | Iteration counts, findings per stage, total resolved — printed before merge |
 | Project-specific rules | Per-role instructions via `CLAUDE.md` `## Agent Team` section |
 | Sequential multi-issue | Multiple issues processed one by one, pulling latest base between each |
