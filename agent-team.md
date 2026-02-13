@@ -1,3 +1,8 @@
+---
+name: agent-team
+version: 2.2.0
+---
+
 # Agent Team Lead
 
 You coordinate a team of agents to resolve GitHub issues.
@@ -6,26 +11,29 @@ You coordinate a team of agents to resolve GitHub issues.
 
 You receive one or more issue numbers as arguments (e.g., `#38` or `#38 #42 #15`). If none are provided, ask for them.
 
-**Optional parameter: `--auto-merge`** — If included (e.g., `#38 #42 --auto-merge`), merge automatically after both reviews pass with zero findings, without asking for user confirmation. If NOT included, ask for confirmation before each merge (default behavior).
+**Optional parameter: `--auto-merge`** — If included (e.g., `#38 #42 --auto-merge`), merge automatically after all 3 reviews pass with zero findings, without asking for user confirmation. If NOT included, ask for confirmation before each merge (default behavior).
 
-**Multiple issues are processed SEQUENTIALLY** — each issue goes through the full flow (branch → code → review → merge) before starting the next. After merging each issue, pull staging before starting the next one to always start from the latest base.
+**Optional parameter: `--base <branch>`** — Base branch for checkout and PR target. Defaults to `staging` if not provided.
+
+**Multiple issues are processed SEQUENTIALLY** — each issue goes through the full flow (branch → code → review → merge) before starting the next. After merging each issue, pull the base branch before starting the next one to always start from the latest base.
 
 ## Setup (repeat for each issue)
 
 1. Read the issue with `gh issue view <number>` to understand the full scope.
 2. Read `CLAUDE.md` for project context (only on the first issue, or if it changed).
 3. Based on the issue, define:
-   - **Branch name**: `feature/<descriptive-name>`
+   - **Branch name**: `feature/<issue-number>-<descriptive-name>` (e.g., `feature/38-add-auth`)
    - **Instructions for the coder**: which files to read, what to implement (numbered steps), which tests to run, which docs to update
    - **Review criteria**: what the reviewer should verify based on the type of change in the issue
 
 ## Your role: Team Lead
 
-You coordinate 3 teammates:
+You coordinate 4 teammates:
 
 - **coder**: edits files and runs tests. Does NOT touch git.
-- **reviewer**: first functional review with `/pr-review`. Does NOT touch git or edit files.
-- **senior-reviewer**: second consistency review with `/pr-review`. Does NOT touch git or edit files.
+- **reviewer**: first functional review with `/pr-review --team`. Does NOT touch git or edit files.
+- **senior-reviewer**: second consistency review with `/pr-review --team`. Does NOT touch git or edit files.
+- **final-reviewer**: third cold/generic review with `/pr-review --team`. Does NOT touch git or edit files.
 
 **You (team lead) are the ONLY one who runs git and gh commands.**
 
@@ -37,9 +45,27 @@ You coordinate 3 teammates:
 **ALWAYS use TeamCreate, Task, and SendMessage tools. These are the ONLY valid ways to create and communicate with teammates.**
 **If you don't use TeamCreate + Task, the user CANNOT see the teammates or navigate between them.**
 **Without TeamCreate, SendMessage messages are NOT delivered. TeamCreate is MANDATORY before spawning any teammate.**
-**ALWAYS verify your EXACT branch name before ANY git operation (add, commit, push). Another concurrent team may have switched branches. Use the Step 4 check with your specific branch name — `feature/*` glob is NOT sufficient.**
+
+## Error Recovery
+
+If a teammate does not respond (crash, timeout, context overflow):
+- **Coder**: re-spawn with the same instructions via Task. Files already written remain on disk.
+- **Reviewer / Senior-reviewer / Final-reviewer**: kill (shutdown_request, ignore if unresponsive) and spawn a new one with the same prompt.
+- If re-spawn fails twice, stop and report the error to the user.
 
 ## Flow (step by step)
+
+### Step 0 — Pre-flight check (first issue only)
+
+Before starting, verify the environment is ready:
+
+```bash
+gh auth status
+git remote -v
+git rev-parse --verify <base-branch>
+```
+
+If any check fails, stop and report the error to the user. Do NOT create the team or branch until all checks pass.
 
 ### Step 1 — Create team and prepare branch
 
@@ -52,18 +78,14 @@ TeamCreate(team_name="issue-<number>", description="Resolve issue #<number>")
 Only AFTER TeamCreate has been executed successfully:
 
 ```bash
-git checkout staging && git pull origin staging
-git checkout -b feature/<feature-name>
+BASE_BRANCH="staging"   # ← or the value of --base if provided
+BRANCH="feature/<issue-number>-<descriptive-name>"
+
+git checkout "$BASE_BRANCH" && git pull origin "$BASE_BRANCH"
+git checkout -b "$BRANCH"
 ```
 
-**Store the branch name** — you will need it for every git operation:
-```
-BRANCH="feature/<feature-name>"
-```
-
-**This is the ONLY branch for YOUR issue.** Do not `git checkout` to any other branch until the work is committed and pushed. The coder and you share the same filesystem — if you switch branches, the files the coder created/modified are lost.
-
-**CONCURRENT TEAMS WARNING:** If multiple agent-teams are running simultaneously, another team lead may checkout a different branch at any time. **Never assume you're still on your branch.** Before EVERY git operation (commit, push, add), run the exact-branch check shown in Step 4. This is not optional — skipping it WILL cause commits on the wrong branch.
+**`$BRANCH` is the ONLY branch for the session.** Do not `git checkout` to any other branch until the work is committed and pushed. The coder and you share the same filesystem — if you switch branches, the files the coder created/modified are lost. Use `$BRANCH` and `$BASE_BRANCH` in ALL git commands from this point forward.
 
 ### Reference: how to spawn teammates
 
@@ -99,7 +121,7 @@ Use `TeamDelete` when everything is merged.
 
 Send the coder instructions derived from the issue. Include:
 - Which files to read for context
-- What to implement (numbered steps, specific to the issue)
+- What to implement (ALWAYS use numbered steps — the coder reports progress per step)
 - Which tests to run to verify
 - Which documentation files to update
 
@@ -108,12 +130,15 @@ Always end with:
 RULES:
 - Do NOT run ANY git commands
 - Git is handled by me (team lead), you ONLY edit files and run tests
+- After completing each numbered step, send a brief progress update to the team lead via SendMessage
 ```
 
 ### Step 3 — WAIT for the coder
 
 **Do NOT do anything until the coder confirms they're done and tests pass.**
 Print a status line (e.g., `Waiting for the coder to finish implementation...`) and STOP. Do not use `sleep`, `echo`, or any Bash command to wait. The coder's message arrives automatically.
+
+You may receive progress messages from the coder between steps. These are informational — wait for the final confirmation.
 
 **When the coder says they're done, verify that files exist with `ls -la <path>`.** Do NOT use Glob or git status to verify — use `ls` directly. The files ARE on disk even if other tools don't show them.
 
@@ -123,18 +148,14 @@ Print a status line (e.g., `Waiting for the coder to finish implementation...`) 
 
 Only when the coder confirms they're done:
 
-**Before touching git, verify you're on YOUR exact feature branch (not just any `feature/*`):**
+**Before touching git, verify you're on the feature branch:**
 
 ```bash
 current=$(git branch --show-current)
-expected="feature/<feature-name>"
-if [[ "$current" != "$expected" ]]; then
-  echo "WRONG BRANCH: on $current, expected $expected — switching..."
-  git checkout "$expected"
-fi
+if [[ "$current" != "$BRANCH" ]]; then echo "ERROR: on $current, expected $BRANCH" && exit 1; fi
 ```
 
-**This check is MANDATORY before every `git add`, `git commit`, and `git push` — including in the review loop (Step 6).** Another concurrent team may have switched the branch. Never skip this check, even if you "just" verified it.
+If the check fails, switch to the correct feature branch before continuing. Do NOT commit to `$BASE_BRANCH` directly.
 
 ```bash
 git add <files the coder listed>
@@ -142,9 +163,9 @@ git commit -m "<type>: <description>
 
 Closes #<issue>
 
-Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
-git push origin feature/<name>
-gh pr create --base staging --title "<title>" --body "$(cat <<'EOF'
+Co-Authored-By: Claude <noreply@anthropic.com>"
+git push origin "$BRANCH"
+gh pr create --base "$BASE_BRANCH" --title "<title>" --body "$(cat <<'EOF'
 ## Summary
 <bullets>
 
@@ -192,7 +213,7 @@ The loop is:
 2. Team lead **kills the reviewer** (shutdown_request).
 3. Team lead sends the COMPLETE list of findings TO THE CODER via **SendMessage** (copy verbatim, do NOT write "see reviewer's message"). The coder does NOT have access to the reviewer's messages.
 4. Coder fixes EVERYTHING.
-5. Team lead **verifies exact branch** (run the Step 4 branch check — must match your specific `feature/<name>`, not just any `feature/*`), then makes a new commit and push.
+5. Team lead **verifies branch** (`git branch --show-current` must be `$BRANCH`), then makes a new commit and push.
 6. Team lead **spawns a NEW reviewer** and sends:
    ```
    Review PR #X using /pr-review --team.
@@ -309,7 +330,7 @@ Then proceed with merge:
 
 ```bash
 gh pr merge <PR> --squash --delete-branch
-git checkout staging && git pull origin staging
+git checkout "$BASE_BRANCH" && git pull origin "$BASE_BRANCH"
 ```
 
 **After merge, clean up the team immediately:**
@@ -334,11 +355,11 @@ This removes team and task files from disk. Without this, stale tasks get re-del
 
 ```
 FOR EACH ISSUE (sequential):
-  Issue → Branch → Coder implements → Commit/Push/PR
+  Issue → Branch from $BASE_BRANCH → Coder implements → Commit/Push/PR
   → LOOP: Reviewer reviews (functional, max 5 iter)
   → LOOP: Senior-reviewer reviews (consistency, max 3 iter)
   → LOOP: Final-reviewer reviews (cold/generic, no scope restrictions, max 3 iter)
-  → User confirmation → Merge → pull staging → TeamDelete
+  → User confirmation → Merge → pull $BASE_BRANCH → TeamDelete
   → Next issue (if more)
 ```
 
@@ -350,6 +371,7 @@ Read the `## Agent Team` section in the project's `CLAUDE.md`. If it exists, it 
 - `### coder` — additional rules for the coder. Append to the coder's prompt.
 - `### reviewer` — additional review criteria for the reviewer. Append to the reviewer's prompt.
 - `### senior-reviewer` — additional review criteria for the senior-reviewer. Append to the senior-reviewer's prompt.
+- `### final-reviewer` — additional review criteria for the final-reviewer. Append to the final-reviewer's prompt.
 
 If the `## Agent Team` section does not exist in `CLAUDE.md`, skip — no project-specific rules apply.
 
