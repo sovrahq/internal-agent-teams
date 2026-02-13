@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## 2.5.0
+
+- Coder must re-run tests after fixing reviewer findings before team lead commits
+- Added rebase on `$BASE_BRANCH` before merge to catch conflicts early (with `--force-with-lease` push)
+- Added cleanup-on-failure section: worktree removal + branch deletion + TeamDelete on abort
+- Documented why `ls -la` is used instead of Glob/git status (Claude Code tool caching in worktrees)
+
+## 2.4.0
+
+- Switched to git worktrees: each team gets its own isolated directory (`$WORKTREE`), enabling safe parallel execution
+- All git commands now use `git -C "$WORKTREE"` to operate inside the worktree
+- Post-merge cleanup: `git worktree remove` + `git branch -d` instead of `git checkout $BASE_BRANCH`
+- Removed dirty working tree pre-flight check (no longer needed with worktrees)
+
+## 2.3.0
+
+- Renamed invocation command from `team-lead` to `agent-team`
+- Changed branch naming to `feature/<issue>-<name>-<hash>` with random hash to avoid collisions on re-runs and parallel teams
+- Added dirty working tree check to pre-flight (Step 0 now fails if uncommitted changes exist)
+
 ## 2.2.0
 
 - Added `--base <branch>` parameter to configure base branch (defaults to `staging`)

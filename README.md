@@ -53,6 +53,7 @@ agent-team #38 #42 --auto-merge --base main  # combine flags
 - **Error recovery** — crashed teammates are automatically re-spawned (max 2 retries)
 - **Project-specific rules** — per-role instructions via `CLAUDE.md` sections
 - **Pre-flight checks** — verifies `gh auth`, git remote, and base branch before starting
+- **Parallel-safe** — git worktrees isolate each team's filesystem, no branch collisions
 
 ## Examples
 
@@ -65,7 +66,7 @@ The team lead runs pre-flight checks, creates the team, and spawns the coder:
 
 TeamCreate(team_name="issue-38", description="Resolve issue #38")
 
-Branch: feature/38-add-user-preferences-a4f2c1
+Worktree: ../issue-38 → feature/38-add-user-preferences-a4f2c1
 Coder spawned with 5 implementation steps. Waiting for the coder to finish implementation...
 ```
 
@@ -130,13 +131,12 @@ Files changed: 8 (+342 -27)
 When multiple issues are provided, each goes through the full pipeline before starting the next:
 
 ```
-✓ Issue #38 merged. Pulling $BASE_BRANCH...
+✓ Issue #38 merged. Worktree ../issue-38 removed.
 
 Starting issue #42...
-✓ Pre-flight: staging up to date
 
 TeamCreate(team_name="issue-42", description="Resolve issue #42")
-Branch: feature/42-fix-webhook-auth-e7b3d9
+Worktree: ../issue-42 → feature/42-fix-webhook-auth-e7b3d9
 ...
 ```
 
@@ -157,14 +157,14 @@ Branch: feature/42-fix-webhook-auth-e7b3d9
 ```
 PER ISSUE (sequential):
   0. Pre-flight check (gh auth, git remote, base branch)
-  1. Team lead reads issue, creates branch from $BASE_BRANCH
+  1. Team lead reads issue, creates worktree + branch from $BASE_BRANCH
   2. Team lead spawns coder with detailed numbered steps
   3. Coder implements, reports progress per step, runs tests
   4. Team lead commits, pushes, creates PR to $BASE_BRANCH
   5. Reviewer loop — functional review (max 5 iterations)
   6. Senior-reviewer loop — consistency review (max 3 iterations)
   7. Final-reviewer loop — cold/generic review (max 3 iterations)
-  8. Summary → user confirms → squash merge → pull $BASE_BRANCH → TeamDelete
+  8. Summary → user confirms → squash merge → remove worktree → TeamDelete
   9. Next issue (if any)
 ```
 
@@ -267,7 +267,8 @@ Add this section to your project's `CLAUDE.md`:
 | Coder progress reports | Per-step updates via SendMessage so the team lead tracks implementation progress |
 | Pre-flight checks | Verifies gh auth, git remote, and base branch existence before starting |
 | Error recovery | Crashed agents re-spawned automatically (max 2 retries) |
-| Parametrized branches | `$BASE_BRANCH` and `$BRANCH` variables used in all git commands |
+| Git worktrees | Each team gets its own directory — parallel teams never interfere with each other |
+| Parametrized branches | `$BASE_BRANCH`, `$BRANCH`, and `$WORKTREE` variables used in all git commands |
 | Branch naming | `feature/<issue-number>-<name>-<short-hash>` — readable + unique to avoid collisions |
 | Review summary | Iteration counts, findings per stage, total resolved — printed before merge |
 | Project-specific rules | Per-role instructions via `CLAUDE.md` `## Agent Team` section |
@@ -292,6 +293,9 @@ git clone git@github.com:fernandezdiegoh/df-claude-skills.git
 
 | Version | Changes |
 |---------|---------|
+| 2.5.0 | Mandatory test re-run after reviewer fixes, rebase before merge, cleanup on failure, documented `ls` workaround |
+| 2.4.0 | Git worktrees for parallel-safe execution, all git commands via `git -C "$WORKTREE"` |
+| 2.3.0 | Renamed invocation to `agent-team`, unique branch names with random hash |
 | 2.2.0 | `--base` parameter, pre-flight checks, error recovery, coder progress checkpoints, parametrized `$BRANCH`/`$BASE_BRANCH`, branch naming with issue number, generic Co-Authored-By |
 | 2.1.0 | `--team` flag on all `/pr-review` invocations (requires pr-review v2.1.0+) |
 | 2.0.0 | Final-reviewer stage, project-specific rules via `CLAUDE.md`, review summary table, `--auto-merge` flag |

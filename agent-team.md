@@ -1,6 +1,6 @@
 ---
 name: agent-team
-version: 2.2.0
+version: 2.5.0
 ---
 
 # Agent Team Lead
@@ -53,6 +53,16 @@ If a teammate does not respond (crash, timeout, context overflow):
 - **Reviewer / Senior-reviewer / Final-reviewer**: kill (shutdown_request, ignore if unresponsive) and spawn a new one with the same prompt.
 - If re-spawn fails twice, stop and report the error to the user.
 
+**Cleanup on abort or unrecoverable failure** — If the flow stops before merge (user aborts, repeated failures), always clean up before exiting:
+
+```bash
+git worktree remove "$WORKTREE"   # remove the worktree directory
+git branch -D "$BRANCH"           # delete the local branch (use -D since it was never merged)
+```
+```
+TeamDelete
+```
+
 ## Flow (step by step)
 
 ### Step 0 — Pre-flight check (first issue only)
@@ -63,10 +73,9 @@ Before starting, verify the environment is ready:
 gh auth status
 git remote -v
 git rev-parse --verify <base-branch>
-git status --short
 ```
 
-If any check fails, stop and report the error to the user. **If `git status --short` shows uncommitted changes, stop and ask the user to stash or commit them first.** Do NOT create the team or branch until all checks pass and the working tree is clean.
+If any check fails, stop and report the error to the user. Do NOT create the team or branch until all checks pass.
 
 ### Step 1 — Create team and prepare branch
 
@@ -81,12 +90,13 @@ Only AFTER TeamCreate has been executed successfully:
 ```bash
 BASE_BRANCH="staging"   # ← or the value of --base if provided
 BRANCH="feature/<issue-number>-<descriptive-name>-$(openssl rand -hex 3)"
+WORKTREE="../issue-<number>"
 
-git checkout "$BASE_BRANCH" && git pull origin "$BASE_BRANCH"
-git checkout -b "$BRANCH"
+git pull origin "$BASE_BRANCH"
+git worktree add "$WORKTREE" -b "$BRANCH" "$BASE_BRANCH"
 ```
 
-**`$BRANCH` is the ONLY branch for the session.** Do not `git checkout` to any other branch until the work is committed and pushed. The coder and you share the same filesystem — if you switch branches, the files the coder created/modified are lost. Use `$BRANCH` and `$BASE_BRANCH` in ALL git commands from this point forward.
+This creates a separate directory (`$WORKTREE`) checked out to `$BRANCH`. Each team gets its own filesystem — parallel teams never interfere with each other. **The coder works inside `$WORKTREE`, not in the main repo directory.** Use `$BRANCH`, `$BASE_BRANCH`, and `$WORKTREE` in ALL git commands from this point forward.
 
 ### Reference: how to spawn teammates
 
@@ -141,7 +151,7 @@ Print a status line (e.g., `Waiting for the coder to finish implementation...`) 
 
 You may receive progress messages from the coder between steps. These are informational — wait for the final confirmation.
 
-**When the coder says they're done, verify that files exist with `ls -la <path>`.** Do NOT use Glob or git status to verify — use `ls` directly. The files ARE on disk even if other tools don't show them.
+**When the coder says they're done, verify that files exist with `ls -la <path>`.** Do NOT use Glob or git status to verify — use `ls` directly. (Why: Claude Code's Glob and git status tools may not see files created by subagents in worktrees due to tool caching. `ls` reads the filesystem directly and always works.)
 
 **NEVER do the coder's work yourself.** Don't create files, don't edit code, don't use Task agents to code. If you think files don't exist, verify with `ls`. If they truly don't exist, ask the coder to recreate them.
 
@@ -149,23 +159,25 @@ You may receive progress messages from the coder between steps. These are inform
 
 Only when the coder confirms they're done:
 
+**All git commands in this step run inside the worktree directory (`$WORKTREE`).**
+
 **Before touching git, verify you're on the feature branch:**
 
 ```bash
-current=$(git branch --show-current)
+current=$(git -C "$WORKTREE" branch --show-current)
 if [[ "$current" != "$BRANCH" ]]; then echo "ERROR: on $current, expected $BRANCH" && exit 1; fi
 ```
 
 If the check fails, switch to the correct feature branch before continuing. Do NOT commit to `$BASE_BRANCH` directly.
 
 ```bash
-git add <files the coder listed>
-git commit -m "<type>: <description>
+git -C "$WORKTREE" add <files the coder listed>
+git -C "$WORKTREE" commit -m "<type>: <description>
 
 Closes #<issue>
 
 Co-Authored-By: Claude <noreply@anthropic.com>"
-git push origin "$BRANCH"
+git -C "$WORKTREE" push origin "$BRANCH"
 gh pr create --base "$BASE_BRANCH" --title "<title>" --body "$(cat <<'EOF'
 ## Summary
 <bullets>
@@ -213,8 +225,8 @@ The loop is:
 1. Team lead reads the reviewer's message with findings.
 2. Team lead **kills the reviewer** (shutdown_request).
 3. Team lead sends the COMPLETE list of findings TO THE CODER via **SendMessage** (copy verbatim, do NOT write "see reviewer's message"). The coder does NOT have access to the reviewer's messages.
-4. Coder fixes EVERYTHING.
-5. Team lead **verifies branch** (`git branch --show-current` must be `$BRANCH`), then makes a new commit and push.
+4. Coder fixes EVERYTHING and **re-runs tests**. The coder must confirm tests pass before the team lead commits.
+5. Team lead **verifies branch** (`git -C "$WORKTREE" branch --show-current` must be `$BRANCH`), then makes a new commit and push from `$WORKTREE`.
 6. Team lead **spawns a NEW reviewer** and sends:
    ```
    Review PR #X using /pr-review --team.
@@ -327,11 +339,27 @@ Files changed: <N files> (+<additions> -<deletions>)   ← from gh pr view --jso
 
 Then proceed with merge:
 
+**Before merging, rebase on the latest base branch to catch conflicts early:**
+
+```bash
+git -C "$WORKTREE" fetch origin "$BASE_BRANCH"
+git -C "$WORKTREE" rebase "origin/$BASE_BRANCH"
+```
+
+If the rebase has conflicts, stop and report to the user. Do NOT force-push or resolve conflicts automatically.
+
+If the rebase succeeded and produced new commits, push the updated branch:
+
+```bash
+git -C "$WORKTREE" push origin "$BRANCH" --force-with-lease
+```
+
 **If `--auto-merge` was NOT passed**, ask the user for confirmation before merging. **If `--auto-merge` was passed**, merge directly without asking.
 
 ```bash
 gh pr merge <PR> --squash --delete-branch
-git checkout "$BASE_BRANCH" && git pull origin "$BASE_BRANCH"
+git worktree remove "$WORKTREE"
+git branch -d "$BRANCH"
 ```
 
 **After merge, clean up the team immediately:**
@@ -356,11 +384,11 @@ This removes team and task files from disk. Without this, stale tasks get re-del
 
 ```
 FOR EACH ISSUE (sequential):
-  Issue → Branch from $BASE_BRANCH → Coder implements → Commit/Push/PR
+  Issue → Worktree + Branch from $BASE_BRANCH → Coder implements → Commit/Push/PR
   → LOOP: Reviewer reviews (functional, max 5 iter)
   → LOOP: Senior-reviewer reviews (consistency, max 3 iter)
   → LOOP: Final-reviewer reviews (cold/generic, no scope restrictions, max 3 iter)
-  → User confirmation → Merge → pull $BASE_BRANCH → TeamDelete
+  → User confirmation → Merge → Remove worktree → TeamDelete
   → Next issue (if more)
 ```
 
