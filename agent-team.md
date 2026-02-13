@@ -37,6 +37,7 @@ You coordinate 3 teammates:
 **ALWAYS use TeamCreate, Task, and SendMessage tools. These are the ONLY valid ways to create and communicate with teammates.**
 **If you don't use TeamCreate + Task, the user CANNOT see the teammates or navigate between them.**
 **Without TeamCreate, SendMessage messages are NOT delivered. TeamCreate is MANDATORY before spawning any teammate.**
+**ALWAYS verify your EXACT branch name before ANY git operation (add, commit, push). Another concurrent team may have switched branches. Use the Step 4 check with your specific branch name — `feature/*` glob is NOT sufficient.**
 
 ## Flow (step by step)
 
@@ -55,7 +56,14 @@ git checkout staging && git pull origin staging
 git checkout -b feature/<feature-name>
 ```
 
-**This is the ONLY branch for the session.** Do not `git checkout` to any other branch until the work is committed and pushed. The coder and you share the same filesystem — if you switch branches, the files the coder created/modified are lost.
+**Store the branch name** — you will need it for every git operation:
+```
+BRANCH="feature/<feature-name>"
+```
+
+**This is the ONLY branch for YOUR issue.** Do not `git checkout` to any other branch until the work is committed and pushed. The coder and you share the same filesystem — if you switch branches, the files the coder created/modified are lost.
+
+**CONCURRENT TEAMS WARNING:** If multiple agent-teams are running simultaneously, another team lead may checkout a different branch at any time. **Never assume you're still on your branch.** Before EVERY git operation (commit, push, add), run the exact-branch check shown in Step 4. This is not optional — skipping it WILL cause commits on the wrong branch.
 
 ### Reference: how to spawn teammates
 
@@ -115,14 +123,18 @@ Print a status line (e.g., `Waiting for the coder to finish implementation...`) 
 
 Only when the coder confirms they're done:
 
-**Before touching git, verify you're on the feature branch:**
+**Before touching git, verify you're on YOUR exact feature branch (not just any `feature/*`):**
 
 ```bash
 current=$(git branch --show-current)
-if [[ "$current" != feature/* ]]; then echo "ERROR: on $current, expected feature/*" && exit 1; fi
+expected="feature/<feature-name>"
+if [[ "$current" != "$expected" ]]; then
+  echo "WRONG BRANCH: on $current, expected $expected — switching..."
+  git checkout "$expected"
+fi
 ```
 
-If the check fails, switch to the correct feature branch before continuing. Do NOT commit to staging or main.
+**This check is MANDATORY before every `git add`, `git commit`, and `git push` — including in the review loop (Step 6).** Another concurrent team may have switched the branch. Never skip this check, even if you "just" verified it.
 
 ```bash
 git add <files the coder listed>
@@ -180,7 +192,7 @@ The loop is:
 2. Team lead **kills the reviewer** (shutdown_request).
 3. Team lead sends the COMPLETE list of findings TO THE CODER via **SendMessage** (copy verbatim, do NOT write "see reviewer's message"). The coder does NOT have access to the reviewer's messages.
 4. Coder fixes EVERYTHING.
-5. Team lead **verifies branch** (`git branch --show-current` must be `feature/*`), then makes a new commit and push.
+5. Team lead **verifies exact branch** (run the Step 4 branch check — must match your specific `feature/<name>`, not just any `feature/*`), then makes a new commit and push.
 6. Team lead **spawns a NEW reviewer** and sends:
    ```
    Review PR #X using /pr-review --team.
