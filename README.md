@@ -20,19 +20,19 @@ Add this to your project's Claude Code memory (MEMORY.md or CLAUDE.md), adjustin
 
 ```
 ## Agent Team (swarm)
-When the user says "team-lead <issues>", read `<path-to>/agent-teams/agent-team.md` and execute the flow described there.
+When the user says "agent-team <issues>", read `<path-to>/agent-teams/agent-team.md` and execute the flow described there.
 Flow: team lead + coder + reviewer + senior-reviewer + final-reviewer.
-Invoked with issue numbers as arguments (e.g., `team-lead #<issue-number>` or `team-lead #<issue> #<issue> --auto-merge`).
+Invoked with issue numbers as arguments (e.g., `agent-team #<issue-number>` or `agent-team #<issue> #<issue> --auto-merge`).
 ```
 
 ## Usage
 
 ```
-team-lead #38                             # resolve a single issue
-team-lead #38 #42 #15                     # resolve multiple issues sequentially
-team-lead #38 --auto-merge                # merge without asking for confirmation
-team-lead #38 --base main                 # use main instead of staging as base branch
-team-lead #38 #42 --auto-merge --base main  # combine flags
+agent-team #38                             # resolve a single issue
+agent-team #38 #42 #15                     # resolve multiple issues sequentially
+agent-team #38 --auto-merge                # merge without asking for confirmation
+agent-team #38 --base main                 # use main instead of staging as base branch
+agent-team #38 #42 --auto-merge --base main  # combine flags
 ```
 
 ### Parameters
