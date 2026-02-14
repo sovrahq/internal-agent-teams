@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## 2.6.1
+
+- Fixed reviewer worktree access: all reviewer prompts now include `$WORKTREE` path so reviewers read files from the correct branch instead of attempting `git checkout` (which fails because the branch is locked by the worktree)
+
 ## 2.6.0
 
 - By default, only Blockers and Recommended improvements must be resolved. Minor suggestions are reported but do not block approval.

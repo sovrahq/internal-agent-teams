@@ -294,6 +294,7 @@ git clone git@github.com:fernandezdiegoh/df-claude-skills.git
 
 | Version | Changes |
 |---------|---------|
+| 2.6.1 | Fixed reviewer worktree access: reviewers receive `$WORKTREE` path to read files instead of attempting `git checkout` |
 | 2.6.0 | Minor suggestions no longer block approval by default, `--strict` flag to require all findings resolved |
 | 2.5.1 | Fixed merge cleanup order: worktree removal before branch deletion |
 | 2.5.0 | Mandatory test re-run after reviewer fixes, rebase before merge, cleanup on failure, documented `ls` workaround |

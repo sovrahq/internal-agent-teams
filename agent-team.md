@@ -1,6 +1,6 @@
 ---
 name: agent-team
-version: 2.6.0
+version: 2.6.1
 ---
 
 # Agent Team Lead
@@ -197,6 +197,11 @@ Spawn the reviewer with `Task` (with `team_name`). In the reviewer's prompt incl
 
 ```
 Review PR #X using /pr-review --team.
+
+The PR branch is checked out in a worktree at `$WORKTREE`.
+To read any file from the PR, use that path (e.g., Read "$WORKTREE/src/file.ts").
+Do NOT run `git checkout` — the branch is locked by the worktree and checkout will fail.
+
 Verify especially:
 - <specific criteria derived from the issue>
 - That no code was modified outside the scope
@@ -233,6 +238,10 @@ The loop is:
    ```
    Review PR #X using /pr-review --team.
 
+   The PR branch is checked out in a worktree at `$WORKTREE`.
+   To read any file from the PR, use that path (e.g., Read "$WORKTREE/src/file.ts").
+   Do NOT run `git checkout` — the branch is locked by the worktree and checkout will fail.
+
    This PR had a previous review that found the following issues (already fixed by the coder):
    <verbatim list of findings from the previous iteration>
 
@@ -259,6 +268,10 @@ After the reviewer approved with 0 findings, spawn the senior-reviewer with `Tas
 
 ```
 Review PR #X using /pr-review --team.
+
+The PR branch is checked out in a worktree at `$WORKTREE`.
+To read any file from the PR, use that path (e.g., Read "$WORKTREE/src/file.ts").
+Do NOT run `git checkout` — the branch is locked by the worktree and checkout will fail.
 
 This PR already passed a first functional review. Your role is a second pass focused on CONSISTENCY and QUALITY.
 
@@ -290,6 +303,10 @@ After the senior-reviewer approved with 0 findings, spawn a **final-reviewer** w
 
 ```
 Review PR #X using /pr-review --team.
+
+The PR branch is checked out in a worktree at `$WORKTREE`.
+To read any file from the PR, use that path (e.g., Read "$WORKTREE/src/file.ts").
+Do NOT run `git checkout` — the branch is locked by the worktree and checkout will fail.
 
 This PR already passed a functional review and a consistency review, both with 0 findings.
 
