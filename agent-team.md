@@ -1,6 +1,6 @@
 ---
 name: agent-team
-version: 2.6.1
+version: 2.6.2
 ---
 
 # Agent Team Lead
@@ -379,6 +379,7 @@ git -C "$WORKTREE" push origin "$BRANCH" --force-with-lease
 git worktree remove "$WORKTREE"
 gh pr merge <PR> --squash --delete-branch
 git branch -d "$BRANCH" 2>/dev/null   # may already be deleted by --delete-branch
+gh issue close <ISSUE_NUMBER> -c "Resolved in PR #<PR_NUMBER> (merged to $BASE_BRANCH)"
 ```
 
 **After merge, clean up the team immediately:**

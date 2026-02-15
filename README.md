@@ -204,6 +204,7 @@ If re-spawn fails twice, the team lead stops and reports the error to the user.
 
 - **Default**: asks user for confirmation before `gh pr merge --squash`
 - **`--auto-merge`**: merges automatically after all 3 reviews pass with zero findings
+- After every successful merge, the team lead closes the corresponding issue with a comment referencing the PR
 
 ## Project-specific rules
 
@@ -294,6 +295,7 @@ git clone git@github.com:fernandezdiegoh/df-claude-skills.git
 
 | Version | Changes |
 |---------|---------|
+| 2.6.2 | Auto-close GitHub issues after merge with PR reference comment |
 | 2.6.1 | Fixed reviewer worktree access: reviewers receive `$WORKTREE` path to read files instead of attempting `git checkout` |
 | 2.6.0 | Minor suggestions no longer block approval by default, `--strict` flag to require all findings resolved |
 | 2.5.1 | Fixed merge cleanup order: worktree removal before branch deletion |

@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## 2.6.2
+
+- After merging each PR, the team lead now closes the corresponding GitHub issue with a comment referencing the PR (`gh issue close <N> -c "Resolved in PR #<PR> (merged to $BASE_BRANCH)"`)
+
 ## 2.6.1
 
 - Fixed reviewer worktree access: all reviewer prompts now include `$WORKTREE` path so reviewers read files from the correct branch instead of attempting `git checkout` (which fails because the branch is locked by the worktree)
