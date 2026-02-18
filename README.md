@@ -54,6 +54,7 @@ agent-team #38 #42 --auto-merge --base main  # combine flags
 - **Error recovery** — crashed teammates are automatically re-spawned (max 2 retries)
 - **Project-specific rules** — per-role instructions via `CLAUDE.md` sections
 - **Pre-flight checks** — verifies `gh auth`, git remote, and base branch before starting
+- **Stale cleanup** — prunes orphaned worktrees and branches from crashed runs before starting each issue
 - **Parallel-safe** — git worktrees isolate each team's filesystem, no branch collisions
 
 ## Examples
@@ -158,6 +159,7 @@ Worktree: ../issue-42 → feature/42-fix-webhook-auth-e7b3d9
 ```
 PER ISSUE (sequential):
   0. Pre-flight check (gh auth, git remote, base branch)
+  0.5. Cleanup stale worktree/branch for this issue (prune + issue-specific removal)
   1. Team lead reads issue, creates worktree + branch from $BASE_BRANCH
   2. Team lead spawns coder with detailed numbered steps
   3. Coder implements, reports progress per step, runs tests
@@ -268,6 +270,7 @@ Add this section to your project's `CLAUDE.md`:
 | 3-category findings | Blockers / Recommended / Minor — no other categories allowed |
 | Coder progress reports | Per-step updates via SendMessage so the team lead tracks implementation progress |
 | Pre-flight checks | Verifies gh auth, git remote, and base branch existence before starting |
+| Stale cleanup | Prunes orphaned worktrees and branches from crashed runs before each issue (only for current issue — parallel teams untouched) |
 | Error recovery | Crashed agents re-spawned automatically (max 2 retries) |
 | Git worktrees | Each team gets its own directory — parallel teams never interfere with each other |
 | Parametrized branches | `$BASE_BRANCH`, `$BRANCH`, and `$WORKTREE` variables used in all git commands |
@@ -295,6 +298,7 @@ git clone git@github.com:fernandezdiegoh/df-claude-skills.git
 
 | Version | Changes |
 |---------|---------|
+| 2.7.0 | Step 0.5 — cleanup stale worktrees/branches before each issue (global prune + issue-specific removal, parallel-safe) |
 | 2.6.5 | Reverted worktrees to sibling directory `../issue-<N>` — nesting inside repo caused tooling (npm, pytest) to hang |
 | 2.6.4 | Coder installs dependencies as first step — worktrees are fresh checkouts without `node_modules`/venvs |
 | 2.6.3 | Worktrees now created inside the project repo at `docs/agent-teams/issue-<N>` instead of sibling directory |

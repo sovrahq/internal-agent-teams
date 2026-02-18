@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## 2.7.0
+
+- Added Step 0.5 — Cleanup stale worktrees and branches before creating the team
+- Runs `git worktree prune` and `git fetch origin --prune` (safe global cleanup)
+- Removes stale worktree and branches only for the CURRENT issue — parallel teams are never touched
+- Prevents `git worktree add` failures when retrying an issue after a crash or force-quit
+
 ## 2.6.5
 
 - Reverted worktree location back to `../issue-<number>` (sibling to project repo) — having worktrees inside the repo caused `npm install`, `pytest`, and other tools to resolve parent configs and hang

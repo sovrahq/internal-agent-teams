@@ -1,6 +1,6 @@
 ---
 name: agent-team
-version: 2.6.5
+version: 2.7.0
 ---
 
 # Agent Team Lead
@@ -78,6 +78,34 @@ git rev-parse --verify <base-branch>
 ```
 
 If any check fails, stop and report the error to the user. Do NOT create the team or branch until all checks pass.
+
+### Step 0.5 — Cleanup stale worktrees and branches
+
+Before creating the team, clean up leftovers from previous runs that may have crashed. This runs for EACH issue, not just the first.
+
+```bash
+# Safe global cleanup — always harmless
+git worktree prune
+git fetch origin --prune
+
+# Issue-specific: if THIS issue's worktree already exists, clean it up
+WORKTREE="../issue-<number>"
+if [ -d "$WORKTREE" ]; then
+  echo "WARNING: stale worktree found at $WORKTREE — removing"
+  git worktree remove "$WORKTREE" --force
+fi
+
+# If a branch for this issue already exists locally, delete it
+# (match any branch starting with feature/<issue-number>-)
+for branch in $(git branch --list "feature/<issue-number>-*"); do
+  echo "WARNING: stale branch $branch found — deleting"
+  git branch -D "$branch"
+done
+```
+
+**Only clean up resources for the CURRENT issue.** Worktrees and branches from other issues may belong to parallel teams running in separate sessions — do NOT touch them.
+
+If the worktree removal fails (e.g., locked by another process), stop and report the error to the user. Do NOT proceed with a dirty worktree path.
 
 ### Step 1 — Create team and prepare branch
 
@@ -406,7 +434,7 @@ This removes team and task files from disk. Without this, stale tasks get re-del
 
 ```
 FOR EACH ISSUE (sequential):
-  Issue → Worktree + Branch from $BASE_BRANCH → Coder implements → Commit/Push/PR
+  Issue → Cleanup stale worktree/branch for this issue → Worktree + Branch from $BASE_BRANCH → Coder implements → Commit/Push/PR
   → LOOP: Reviewer reviews (functional, max 5 iter)
   → LOOP: Senior-reviewer reviews (consistency, max 3 iter)
   → LOOP: Final-reviewer reviews (cold/generic, no scope restrictions, max 3 iter)
