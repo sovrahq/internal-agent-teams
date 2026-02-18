@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## 2.6.5
+
+- Reverted worktree location back to `../issue-<number>` (sibling to project repo) — having worktrees inside the repo caused `npm install`, `pytest`, and other tools to resolve parent configs and hang
+- Removed `mkdir -p` and `.gitignore` instructions (no longer needed with sibling worktrees)
+
 ## 2.6.4
 
 - Coder must install dependencies as first step (Step 0) — worktrees are fresh checkouts without `node_modules`, venvs, or other non-tracked dependencies

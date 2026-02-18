@@ -67,7 +67,7 @@ The team lead runs pre-flight checks, creates the team, and spawns the coder:
 
 TeamCreate(team_name="issue-38", description="Resolve issue #38")
 
-Worktree: docs/agent-teams/issue-38 → feature/38-add-user-preferences-a4f2c1
+Worktree: ../issue-38 → feature/38-add-user-preferences-a4f2c1
 Coder spawned with 5 implementation steps. Waiting for the coder to finish implementation...
 ```
 
@@ -132,12 +132,12 @@ Files changed: 8 (+342 -27)
 When multiple issues are provided, each goes through the full pipeline before starting the next:
 
 ```
-✓ Issue #38 merged. Worktree docs/agent-teams/issue-38 removed.
+✓ Issue #38 merged. Worktree ../issue-38 removed.
 
 Starting issue #42...
 
 TeamCreate(team_name="issue-42", description="Resolve issue #42")
-Worktree: docs/agent-teams/issue-42 → feature/42-fix-webhook-auth-e7b3d9
+Worktree: ../issue-42 → feature/42-fix-webhook-auth-e7b3d9
 ...
 ```
 
@@ -295,6 +295,7 @@ git clone git@github.com:fernandezdiegoh/df-claude-skills.git
 
 | Version | Changes |
 |---------|---------|
+| 2.6.5 | Reverted worktrees to sibling directory `../issue-<N>` — nesting inside repo caused tooling (npm, pytest) to hang |
 | 2.6.4 | Coder installs dependencies as first step — worktrees are fresh checkouts without `node_modules`/venvs |
 | 2.6.3 | Worktrees now created inside the project repo at `docs/agent-teams/issue-<N>` instead of sibling directory |
 | 2.6.2 | Auto-close GitHub issues after merge with PR reference comment |
