@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## 2.6.3
+
+- Moved worktree location from `../issue-<number>` (sibling directory) to `docs/agent-teams/issue-<number>` (inside the target project repo)
+- Added `mkdir -p docs/agent-teams` before worktree creation
+- Projects should add `docs/agent-teams/` to `.gitignore` to exclude worktree directories
+
 ## 2.6.2
 
 - After merging each PR, the team lead now closes the corresponding GitHub issue with a comment referencing the PR (`gh issue close <N> -c "Resolved in PR #<PR> (merged to $BASE_BRANCH)"`)

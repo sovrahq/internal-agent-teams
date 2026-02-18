@@ -1,6 +1,6 @@
 ---
 name: agent-team
-version: 2.6.2
+version: 2.6.3
 ---
 
 # Agent Team Lead
@@ -92,13 +92,14 @@ Only AFTER TeamCreate has been executed successfully:
 ```bash
 BASE_BRANCH="staging"   # ← or the value of --base if provided
 BRANCH="feature/<issue-number>-<descriptive-name>-$(openssl rand -hex 3)"
-WORKTREE="../issue-<number>"
+WORKTREE="docs/agent-teams/issue-<number>"
 
 git pull origin "$BASE_BRANCH"
+mkdir -p docs/agent-teams
 git worktree add "$WORKTREE" -b "$BRANCH" "$BASE_BRANCH"
 ```
 
-This creates a separate directory (`$WORKTREE`) checked out to `$BRANCH`. Each team gets its own filesystem — parallel teams never interfere with each other. **The coder works inside `$WORKTREE`, not in the main repo directory.** Use `$BRANCH`, `$BASE_BRANCH`, and `$WORKTREE` in ALL git commands from this point forward.
+This creates a `docs/agent-teams/issue-<number>` directory inside the project repo, checked out to `$BRANCH`. Each team gets its own filesystem — parallel teams never interfere with each other. **The coder works inside `$WORKTREE`, not in the main repo directory.** Use `$BRANCH`, `$BASE_BRANCH`, and `$WORKTREE` in ALL git commands from this point forward. **Ensure `docs/agent-teams/` is in the project's `.gitignore` so worktree directories are never committed.**
 
 ### Reference: how to spawn teammates
 
