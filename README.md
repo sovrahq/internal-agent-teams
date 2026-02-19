@@ -240,6 +240,12 @@ Add this section to your project's `CLAUDE.md`:
 ### final-reviewer
 <!-- Additional review criteria for the final-reviewer -->
 - Check for edge cases in error handling at system boundaries
+
+### skills
+| Scope | Skill | When to inject |
+|-------|-------|----------------|
+| frontend | /frontend-design | Issue involves UI components, pages, styling, or layout |
+| backend | /api-design-principles | Issue involves API endpoints, data models, or services |
 ```
 
 ### How it works
@@ -248,7 +254,8 @@ Add this section to your project's `CLAUDE.md`:
 2. If `## Agent Team` exists, it extracts each subsection
 3. `### all` rules are appended to **every** teammate's prompt
 4. `### <role>` rules are appended to the **corresponding** teammate's prompt
-5. If the section doesn't exist, no project-specific rules apply — the flow works without it
+5. `### skills` — team lead detects issue scope and injects matching skills into the coder's prompt
+6. If the section doesn't exist, no project-specific rules apply — the flow works without it
 
 ### Supported roles
 
@@ -259,6 +266,7 @@ Add this section to your project's `CLAUDE.md`:
 | `### reviewer` | reviewer only |
 | `### senior-reviewer` | senior-reviewer only |
 | `### final-reviewer` | final-reviewer only |
+| `### skills` | coder only (conditional — injected when issue scope matches) |
 
 ## Key features
 
@@ -276,7 +284,7 @@ Add this section to your project's `CLAUDE.md`:
 | Parametrized branches | `$BASE_BRANCH`, `$BRANCH`, and `$WORKTREE` variables used in all git commands |
 | Branch naming | `feature/<issue-number>-<name>-<short-hash>` — readable + unique to avoid collisions |
 | Review summary | Iteration counts, findings per stage, total resolved — printed before merge |
-| Project-specific rules | Per-role instructions via `CLAUDE.md` `## Agent Team` section |
+| Project-specific rules | Per-role instructions and scope-conditional skills via `CLAUDE.md` `## Agent Team` section |
 | Sequential multi-issue | Multiple issues processed one by one, pulling latest base between each |
 | Auto-merge flag | Skip confirmation when all reviews pass with zero findings |
 | Base branch flag | Target any branch instead of the default `staging` |
@@ -298,6 +306,7 @@ git clone git@github.com:fernandezdiegoh/df-claude-skills.git
 
 | Version | Changes |
 |---------|---------|
+| 2.8.0 | Conditional skill injection — team lead detects issue scope and injects matching skills (e.g., `/frontend-design`) from `CLAUDE.md` `### skills` mapping |
 | 2.7.0 | Step 0.5 — cleanup stale worktrees/branches before each issue (global prune + issue-specific removal, parallel-safe) |
 | 2.6.5 | Reverted worktrees to sibling directory `../issue-<N>` — nesting inside repo caused tooling (npm, pytest) to hang |
 | 2.6.4 | Coder installs dependencies as first step — worktrees are fresh checkouts without `node_modules`/venvs |

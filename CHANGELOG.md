@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## 2.8.0
+
+- Added conditional skill injection based on issue scope detection
+- Team lead classifies issue scope (frontend, backend, infra, etc.) during Setup and injects matching skills into the coder's prompt
+- Projects declare scope-to-skill mappings in `CLAUDE.md` under `## Agent Team / ### skills` (e.g., `frontend → /frontend-design`)
+- Multiple scopes can match a single issue (full-stack features inject all relevant skills)
+
 ## 2.7.0
 
 - Added Step 0.5 — Cleanup stale worktrees and branches before creating the team

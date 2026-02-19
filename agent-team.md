@@ -1,6 +1,6 @@
 ---
 name: agent-team
-version: 2.7.0
+version: 2.8.0
 ---
 
 # Agent Team Lead
@@ -27,6 +27,11 @@ You receive one or more issue numbers as arguments (e.g., `#38` or `#38 #42 #15`
    - **Branch name**: `feature/<issue-number>-<descriptive-name>-<short-hash>` (e.g., `feature/38-add-auth-a4f2c1`). Generate the hash with `openssl rand -hex 3`.
    - **Instructions for the coder**: which files to read, what to implement (numbered steps), which tests to run, which docs to update
    - **Review criteria**: what the reviewer should verify based on the type of change in the issue
+4. **Detect scope and inject skills** — Classify the issue scope (e.g., `frontend`, `backend`, `infra`). If the project's `CLAUDE.md` defines a `### skills` subsection under `## Agent Team` (see [Project-specific rules](#project-specific-rules)), include the matching skills in the coder's prompt:
+   ```
+   For all UI work in this issue, invoke /frontend-design before implementing any components.
+   ```
+   Only include skills that match the detected scope. If no `### skills` section exists or no scope matches, skip — no skills are injected.
 
 ## Your role: Team Lead
 
@@ -451,6 +456,17 @@ Read the `## Agent Team` section in the project's `CLAUDE.md`. If it exists, it 
 - `### reviewer` — additional review criteria for the reviewer. Append to the reviewer's prompt.
 - `### senior-reviewer` — additional review criteria for the senior-reviewer. Append to the senior-reviewer's prompt.
 - `### final-reviewer` — additional review criteria for the final-reviewer. Append to the final-reviewer's prompt.
+- `### skills` — scope-to-skill mapping. The team lead detects the issue scope and injects matching skills into the coder's prompt. Format:
+
+```markdown
+### skills
+| Scope | Skill | When to inject |
+|-------|-------|----------------|
+| frontend | /frontend-design | Issue involves UI components, pages, styling, or layout |
+| backend | /api-design-principles | Issue involves API endpoints, data models, or services |
+```
+
+When the team lead classifies the issue scope (Setup step 4), it looks up matching rows and adds to the coder's instructions: `"Before implementing, invoke /<skill> and follow its guidelines for all <scope> work."` Multiple scopes can match a single issue (e.g., a full-stack feature injects both `/frontend-design` and `/api-design-principles`).
 
 If the `## Agent Team` section does not exist in `CLAUDE.md`, skip — no project-specific rules apply.
 
